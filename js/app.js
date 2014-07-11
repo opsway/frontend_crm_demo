@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('LightmineApp', [ 'LightmineApp.filters', 'LightmineApp.services', 'LightmineApp.directives', 'ngRoute'])
+angular.module('trackerApp', [ 'trackerApp.filters', 'trackerApp.services', 'trackerApp.directives', 'ngRoute'])
 
 .config([ '$httpProvider', '$routeProvider', '$locationProvider', function($httpProvider, $routeProvider, $locationProvider) {
 	
@@ -15,7 +15,12 @@ angular.module('LightmineApp', [ 'LightmineApp.filters', 'LightmineApp.services'
 	});
 
     $routeProvider.when('/dashboard', {
-            templateUrl : 'partials/project/issues.html',
+            templateUrl : 'partials/dashboard/issues.html',
+            controller : DashboardIssuesController
+        });
+
+    $routeProvider.when('/dashboard/team/:id', {
+            templateUrl : 'partials/dashboard/issues.html',
             controller : DashboardIssuesController
         });
 
@@ -55,7 +60,7 @@ angular.module('LightmineApp', [ 'LightmineApp.filters', 'LightmineApp.services'
     });
 	
 	$routeProvider.otherwise({
-		redirectTo : 'project'
+		redirectTo : 'dashboard'
 	});
 	
 	$locationProvider.hashPrefix('!');

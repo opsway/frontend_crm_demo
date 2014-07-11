@@ -72,33 +72,101 @@ function ProjectVersionsController($scope, $rootScope, $routeParams, ProjectServ
 	});
 }
 
-function DashboardIssuesController($scope, $rootScope, $window, $routeParams, $location, ProjectService, IssueService) {
+function DashboardIssuesController($scope, $rootScope, $window, $routeParams, $location, ProjectService, IssueService, GroupsService, UserService) {
 
 	//ProjectService.get($routeParams.id).then(function(project) {
 	//	$rootScope.project = project;
 	//});
+    $scope.selected = [];
 
-	$scope.loadIssues = function() {
+    var updateSelected = function(action, id) {
+      if (action === 'add' && $scope.selected.indexOf(id) === -1) {
+        $scope.selected.push(id);
+      }
+      if (action === 'remove' && $scope.selected.indexOf(id) !== -1) {
+        $scope.selected.splice($scope.selected.indexOf(id), 1);
+      }
+    };
 
-		delete $scope.issues;
+    $scope.updateSelection = function($event, id) {
+      var checkbox = $event.target;
+      var action = (checkbox.checked ? 'add' : 'remove');
+      updateSelected(action, id);
+    };
+
+    $scope.selectAll = function($event) {
+      var checkbox = $event.target;
+      var action = (checkbox.checked ? 'add' : 'remove');
+      for ( var i = 0; i < $scope.entities.length; i++) {
+        var entity = $scope.entities[i];
+        updateSelected(action, entity.id);
+      }
+    };
+
+    $scope.getSelectedClass = function(entity) {
+      return $scope.isSelected(entity.id) ? 'bg-info' : '';
+    };
+
+    $scope.isSelected = function(id) {
+      return $scope.selected.indexOf(id) >= 0;
+    };
+
+    //something extra I couldn't resist adding :)
+    $scope.isSelectedAll = function() {
+      return $scope.selected.length === $scope.entities.length;
+    };
+
+    UserService.getAllUsers().then(function(users) {
+   		$scope.users = users;
+   	});
+
+    IssueService.getIssueStatuses().then(function(statuses) {
+   		$scope.statuses = statuses;
+   	});
+
+    GroupsService.getAllGroups(true).then(function(groups) {
+        $scope.groups = groups;
+    });
+
+    $scope.params = $routeParams;
+    $scope.orderProp = 'id';
+
+
+	$scope.loadIssuesByStatus = function(issuesName,statusId,limit) {
+
+		delete $scope[issuesName];
 
         var config  = {
             params : {
-                limit : 150
+                limit : limit
             }
         }
+        GroupsService.addTeamFilterToParams($routeParams.id).then(function(params){
+            var query = '?' + params + '&f[]=status_id&op[status_id]=%3D&v[status_id][]=' + statusId;
+            IssueService.find(config,query)
+          			.then(function(data) {
+                        var update = { oldest: 0, newest: 1000000000};
+                        angular.forEach(data.issues, function(value, key) {
+                            data.issues[key]['isChecked'] = false;
+                            data.issues[key]['last_updated'] = Math.floor(((new Date()).getTime() - Date.parse(data.issues[key].updated_on)) / 1000)
+                            if (data.issues[key]['last_updated'] >= update.oldest) update.oldest = data.issues[key]['last_updated'];
+                            if (data.issues[key]['last_updated'] < update.newest) update.newest = data.issues[key]['last_updated'];
+                        });
+                          $scope[issuesName] = {
+          					'entries' : data.issues,
+          					'pagination' : {
+          						'offset' : data.offset,
+          						'total' : data.total_count,
+          						'limit' : data.limit,
+                                'stats' : {
+                                    oldest_update : update.oldest,
+                                    newest_update : update.newest
+                                }
+          					}
+          				};
+          			});
+        });
 
-		IssueService.find(config)
-			.then(function(data) {
-				$scope.issues = {
-					'entries' : data.issues,
-					'pagination' : {
-						'offset' : data.offset,
-						'total' : data.total_count,
-						'limit' : data.limit
-					}
-				};
-			});
 	};
 
 	$scope.deleteIssue = function(issue) {
@@ -110,6 +178,10 @@ function DashboardIssuesController($scope, $rootScope, $window, $routeParams, $l
 		}
 	};
 
+    $scope.editTags = function(issue) {
+        alert('Edit tags not implemented!');
+   	};
+
 	$scope['delete'] = function(id) {
 
 		if ($window.confirm('Are you sure you wish to delete the project?')) {
@@ -118,8 +190,27 @@ function DashboardIssuesController($scope, $rootScope, $window, $routeParams, $l
 			});
 		}
 	};
+    IssueService.getIssueStatuses().then(function(statuses) {
+   		for (var id in statuses){
 
-	$scope.loadIssues();
+            switch (statuses[id].name) {
+                case 'New':
+                    $scope.loadIssuesByStatus('issuesNew',statuses[id].id,100);
+                    break;
+                case 'Next action':
+                    $scope.loadIssuesByStatus('issuesQueue',statuses[id].id,100);
+                    break;
+                case 'Blocked on client':
+                    $scope.loadIssuesByStatus('issuesBlock',statuses[id].id,100);
+                    break;
+                case 'Resolved':
+                    $scope.loadIssuesByStatus('issuesResolved',statuses[id].id,10);
+                    break;
+            }
+
+        }
+   	});
+	//$scope.loadIssues();
 }
 
 function ProjectIssuesController($scope, $rootScope, $window, $routeParams, $location, ProjectService, IssueService) {

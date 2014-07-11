@@ -1,4 +1,4 @@
-var directives = angular.module('LightmineApp.directives', []);
+var directives = angular.module('trackerApp.directives', []);
 
 directives.directive('spinner', function() {
 	return {

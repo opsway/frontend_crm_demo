@@ -1,4 +1,4 @@
-var services = angular.module('LightmineApp.services', ['ngResource']);
+var services = angular.module('trackerApp.services', ['ngResource']);
 
 services.service('ConfigurationService', function($http) {
 
@@ -24,6 +24,67 @@ services.service('ConfigurationService', function($http) {
 });
 
 
+services.service('GroupsService', function($http, $q, ConfigurationService) {
+
+	var allGroupsPromise = undefined;
+    var allGroups = undefined;
+    var mapGroups = undefined;
+    var groupData = {};
+    var groupService = this;
+
+	this.getAllGroups = function(onlyTeams) {
+
+		if (angular.isDefined(allGroupsPromise)) {
+			return allGroupsPromise;
+		}
+
+        allGroupsPromise = $http.get(ConfigurationService.getRestServiceBase() + "/groups.json").then(function(response) {
+            mapGroups = {};
+            allGroups = response.data.groups;
+
+            /* First pass, hash projects */
+            for (var i = 0; i < response.data.groups.length; i++) {
+                if (onlyTeams === true && response.data.groups[i].name.indexOf('OpsWay') === -1) continue;
+                mapGroups[response.data.groups[i].id] = response.data.groups[i];
+            }
+            return mapGroups;//.sort(function(a,b){ return a.id - b.id;});
+		});
+
+		return allGroupsPromise;
+	};
+
+    this.get = function(id) {
+        if (angular.isDefined(groupData[id])) {
+      			return groupData[id];
+      		}
+        groupData[id] = $http.get(ConfigurationService.getRestServiceBase() + "/groups/" + id + ".json?include=users,memberships").then(function(response){
+             return response.data.group;
+        });
+
+        return groupData[id];
+
+   	};
+
+    this.addTeamFilterToParams = function(teamId){
+        var configParams = '';
+        return groupService.get(teamId).then(function(group){
+            console.log(group);
+            //alert(JSON.stringify(group));
+            if (group.memberships.length > 0){
+                for (var i = 0; i < group.memberships.length; i++) {
+                    configParams += 'v[project_id][]=' + group.memberships[i].project.id + '&';
+                }
+                configParams += 'set_filter=' + 1 + '&';
+                configParams += 'f[]=project_id&';
+                configParams += 'op[project_id]=%3D';
+            }
+            return configParams;
+        });
+
+    };
+
+});
+
 services.service('UserService', function($http, $q, ConfigurationService) {
 	
 	var allUsersPromise = undefined;
@@ -38,7 +99,6 @@ services.service('UserService', function($http, $q, ConfigurationService) {
 			return allUsersPromise;
 		}
 		
-			
 		allUsersPromise = $http.get(ConfigurationService.getRestServiceBase() + "/users.json?limit=1000").then(function(response) {
 			return response.data.users;
 		});
@@ -158,8 +218,9 @@ services.service('IssueService', function($http, $q, ConfigurationService) {
     var issuesUrl = ConfigurationService.getRestServiceBase() + "/issues";
 	var issueStatuses = undefined;
 	
-	this.find = function(config) {
-		return $http.get(issuesUrl + ".json", config).then(function(response) {
+	this.find = function(config,filterParams) {
+        if (filterParams == undefined) filterParams = '';
+		return $http.get(issuesUrl + ".json" + filterParams, config).then(function(response) {
 			return response.data;
 		});
 	};

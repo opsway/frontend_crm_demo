@@ -1,0 +1,212 @@
+<ul class="nav nav-tabs">
+  <li ng-repeat="group in groups" ng-class="{active: group.id == params.id}"><a href="#!/dashboard/team/{{group.id}}">{{group.name}}</a></li>
+</ul>
+
+<!--div spinner="issues" class="centered"></div>
+<div class="panel panel-default" ng-repeat="issue in issues.entries">
+	<div class="panel-heading">
+		<div class="dropdown pull-right">
+ 			<a class="link" href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="glyphicon glyphicon-cog"></i></a>
+			<ul class="dropdown-menu" role="menu">
+   				<li><a href="#!/issue/{{issue.id}}/edit"><i class="glyphicon glyphicon-pencil"></i>&nbsp;&nbsp;Edit</a></li>
+   				<li><a class="link" ng-click="deleteIssue(issue)"><i class="glyphicon glyphicon-trash"></i>&nbsp;&nbsp;Delete</a></li>
+			</ul>
+		</div>
+		<h3 class="panel-title">
+			 <span class="badge">{{issue.tracker.name}}</span> <a href="#!/issue/{{issue.id}}/view">{{issue.subject}}</a>
+		</h3>
+	</div>
+	<div class="panel-body">
+		<div class="row">
+			<div class="col-sm-6 col-md-4 col-lg-3">Id: {{issue.id}}</div>
+			<div class="col-sm-6 col-md-4 col-lg-3">Status: {{issue.status.name}}</div>
+			<div class="col-sm-6 col-md-4 col-lg-3">Priority: {{issue.priority.name}}</div>
+			<div class="col-sm-6 col-md-4 col-lg-3">Assigned to: {{issue.assigned_to.name}}</div>
+			<div class="col-sm-6 col-md-4 col-lg-3">Author: {{issue.author.name}}</div>
+            <div class="col-sm-6 col-md-4 col-lg-3">Estimate or Spent time: {{issue.estimated_hours}}</div>
+            <div class="col-sm-6 col-md-4 col-lg-3">Billable: {{issue.is_billable}}</div>
+            <div class="col-sm-6 col-md-4 col-lg-3">Invoiced: {{issue.is_invoiced}}</div>
+            <div class="col-sm-6 col-md-4 col-lg-3">Created At: {{issue.created_on}}</div>
+            <div class="col-sm-6 col-md-4 col-lg-3">Last Update: {{issue.updated_on}}</div>
+		</div>
+	</div>
+</div-->
+
+
+<!-- Columns are always 50% wide, on mobile and desktop -->
+<div class="row">
+  <div class="col-xs-6">
+
+
+      <div class="panel panel-default">
+        <!-- Default panel contents -->
+        <div class="panel-heading"><strong>New</strong> (waiting team manager) <span class="badge">{{issuesNew.pagination.total}}</span>
+            <div style="float: right;">Oldest: <span class="label label-warning">{{issuesNew.pagination.stats.oldest_update | humanTimeAgo}}</span> Newest: <span class="label label-info">{{issuesNew.pagination.stats.newest_update | humanTimeAgo}}</span></div>
+        </div>
+        <div class="panel-body">
+            Sort by:
+            <select ng-model="orderPropNew">
+                <option value="id">Issue number</option>
+                <option value="project.id">Project</option>
+                <option value="is_billable">Billable</option>
+                <option value="last_updated">Last update</option>
+            </select>
+            Search: <input ng-model="queryNew">
+
+            <div class="btn-group" style="float: right;">
+              <button type="button" class="btn btn-primary">Move in queue</button>
+              <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+                <span class="caret"></span>
+                <span class="sr-only">Assign to:</span>
+              </button>
+              <ul class="dropdown-menu" role="menu">
+                  <li ng-repeat="user in users"><a class="link" ng-click="setAssignedTo(user)">{{user | userName}}</a></li>
+              </ul>
+            </div>
+        </div>
+
+        <!-- List group -->
+        <ul class="list-group">
+          <li ng-class="getSelectedClass(issue)" class="list-group-item" ng-repeat="issue in issuesNew.entries | filter:queryNew | orderBy:orderPropNew">
+              <div class="last_update"><span>{{issue.last_updated | humanTimeAgo}}</span></div>
+              <div class="row">
+                     <div class="col-md-3"><span ng-class="issue.is_billable ? 'billable glyphicon glyphicon-usd' : 'billable'"></span><strong class="ng-binding">[{{issue.project.name}} #{{issue.id}}]</strong> </div>
+                     <div class="col-md-9"><a href="#!/issue/{{issue.id}}/view">{{issue.subject}}</a> </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-3"><span class="glyphicon glyphicon-user"></span> {{issue.author.name}}</div>
+                  <div class="col-md-3"><span class="glyphicon glyphicon-tags link" ng-click="editTags(issue)"></span> <span ng-repeat="tag in issue.tags" class="badge">{{tag}}</span></div>
+                  <div class="col-md-3"><span class="glyphicon glyphicon-dashboard"></span> <span class="badge">{{issue.estimated_hours}}</span></div>
+                  <div class="col-md-3"><span class="label label-default">{{issue.assigned_to.name}}</span>
+                      <div style="float: right;"><input type="checkbox" ng-checked="isSelected(issue.id)" ng-click="updateSelection($event, issue.id)"></div>
+                  </div>
+              </div>
+          </li>
+        </ul>
+      </div>
+
+
+
+
+
+      <div class="panel panel-default">
+        <!-- Default panel contents -->
+        <div class="panel-heading"><strong>Next Action</strong> (in engineer queue) <span class="badge">{{issuesQueue.pagination.total}}</span>
+            <div style="float: right;">Oldest: <span class="label label-warning">{{issuesQueue.pagination.stats.oldest_update | humanTimeAgo}}</span> Newest: <span class="label label-info">{{issuesQueue.pagination.stats.newest_update | humanTimeAgo}}</span></div>
+        </div>
+        <div class="panel-body">
+            Sort by:
+            <select ng-model="orderProp">
+                <option value="id">Issue number</option>
+                <option value="project.id">Project</option>
+                <option value="is_billable">Billable</option>
+                <option value="last_updated">Last update</option>
+            </select>
+            Search: <input ng-model="query">
+        </div>
+
+        <!-- List group -->
+        <ul class="list-group">
+          <li ng-class="getSelectedClass(issue)" class="list-group-item" ng-repeat="issue in issuesQueue.entries | filter:query | orderBy:orderProp">
+              <div class="last_update"><span>{{issue.last_updated | humanTimeAgo}}</span></div>
+              <div class="row">
+                     <div class="col-md-3"><span ng-class="issue.is_billable ? 'billable glyphicon glyphicon-usd' : 'billable'"></span><strong class="ng-binding">[{{issue.project.name}} #{{issue.id}}]</strong> </div>
+                     <div class="col-md-9"><a href="#!/issue/{{issue.id}}/view">{{issue.subject}}</a> </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-3"><span class="glyphicon glyphicon-user"></span> {{issue.author.name}}</div>
+                  <div class="col-md-3"><span class="glyphicon glyphicon-tags link" ng-click="editTags(issue)"></span> <span ng-repeat="tag in issue.tags" class="badge">{{tag}}</span></div>
+                  <div class="col-md-3"><span class="glyphicon glyphicon-dashboard"></span> <span class="badge">{{issue.estimated_hours}}</span></div>
+                  <div class="col-md-3"><span class="label label-default">{{issue.assigned_to.name}}</span>
+                      <div style="float: right;"><input type="checkbox" ng-checked="isSelected(issue.id)" ng-click="updateSelection($event, issue.id)"></div>
+                  </div>
+              </div>
+          </li>
+        </ul>
+      </div>
+
+  </div>
+  <div class="col-xs-6">
+
+
+
+
+      <div class="panel panel-default">
+        <!-- Default panel contents -->
+        <div class="panel-heading"><strong>Blocked on client</strong> (waiting client actions) <span class="badge">{{issuesBlock.pagination.total}}</span>
+            <div style="float: right;">Oldest: <span class="label label-warning">{{issuesBlock.pagination.stats.oldest_update | humanTimeAgo}}</span> Newest: <span class="label label-info">{{issuesBlock.pagination.stats.newest_update | humanTimeAgo}}</span></div>
+
+        </div>
+        <div class="panel-body">
+            Sort by:
+            <select ng-model="orderPropBlock">
+                <option value="id">Issue number</option>
+                <option value="project.id">Project</option>
+                <option value="is_billable">Billable</option>
+                <option value="last_updated">Last update</option>
+            </select>
+            Search: <input ng-model="queryBlock">
+        </div>
+
+        <!-- List group -->
+        <ul class="list-group">
+          <li ng-class="getSelectedClass(issue)" class="list-group-item" ng-repeat="issue in issuesBlock.entries | filter:queryBlock | orderBy:orderPropBlock">
+              <div class="last_update"><span>{{issue.last_updated | humanTimeAgo}}</span></div>
+              <div class="row">
+                     <div class="col-md-3"><span ng-class="issue.is_billable ? 'billable glyphicon glyphicon-usd' : 'billable'"></span><strong class="ng-binding">[{{issue.project.name}} #{{issue.id}}]</strong> </div>
+                     <div class="col-md-9"><a href="#!/issue/{{issue.id}}/view">{{issue.subject}}</a> </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-3"><span class="glyphicon glyphicon-user"></span> {{issue.author.name}}</div>
+                  <div class="col-md-3"><span class="glyphicon glyphicon-tags link" ng-click="editTags(issue)"></span> <span ng-repeat="tag in issue.tags" class="badge">{{tag}}</span></div>
+                  <div class="col-md-3"><span class="glyphicon glyphicon-dashboard"></span> <span class="badge">{{issue.estimated_hours}}</span></div>
+                  <div class="col-md-3"><span class="label label-default">{{issue.assigned_to.name}}</span>
+                      <div style="float: right;"><input type="checkbox" ng-checked="isSelected(issue.id)" ng-click="updateSelection($event, issue.id)"></div>
+                  </div>
+              </div>
+          </li>
+        </ul>
+      </div>
+
+
+
+
+      <div class="panel panel-default">
+        <!-- Default panel contents -->
+        <div class="panel-heading"><strong>Recently resolved</strong> (waiting for close) <span class="badge">{{issuesResolved.pagination.total}}</span>
+            <div style="float: right;">Oldest: <span class="label label-warning">{{issuesBlock.pagination.stats.oldest_update | humanTimeAgo}}</span> Newest: <span class="label label-info">{{issuesBlock.pagination.stats.newest_update | humanTimeAgo}}</span></div>
+        </div>
+        <div class="panel-body">
+            Sort by:
+            <select ng-model="orderPropResolved">
+                <option value="id">Issue number</option>
+                <option value="project.id">Project</option>
+                <option value="is_billable">Billable</option>
+                <option value="last_updated">Last update</option>
+            </select>
+            Search: <input ng-model="queryResolved">
+        </div>
+
+        <!-- List group -->
+        <ul class="list-group">
+          <li ng-class="getSelectedClass(issue)" class="list-group-item" ng-repeat="issue in issuesResolved.entries | filter:queryResolved | orderBy:orderPropResolved">
+              <div class="last_update"><span>{{issue.last_updated | humanTimeAgo}}</span></div>
+              <div class="row">
+                     <div class="col-md-3"><span ng-class="issue.is_billable ? 'billable glyphicon glyphicon-usd' : 'billable'"></span><strong class="ng-binding">[{{issue.project.name}} #{{issue.id}}]</strong> </div>
+                     <div class="col-md-9"><a href="#!/issue/{{issue.id}}/view">{{issue.subject}}</a> </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-3"><span class="glyphicon glyphicon-user"></span> {{issue.author.name}}</div>
+                  <div class="col-md-3"><span class="glyphicon glyphicon-tags link" ng-click="editTags(issue)"></span> <span ng-repeat="tag in issue.tags" class="badge">{{tag}}</span></div>
+                  <div class="col-md-3"><span class="glyphicon glyphicon-dashboard"></span> <span class="badge">{{issue.estimated_hours}}</span></div>
+                  <div class="col-md-3"><span class="label label-default">{{issue.assigned_to.name}}</span>
+                      <div style="float: right;"><input type="checkbox" ng-checked="isSelected(issue.id)" ng-click="updateSelection($event, issue.id)"></div>
+                  </div>
+              </div>
+          </li>
+        </ul>
+      </div>
+
+  </div>
+</div>
+
